@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>HoliSafe</title>
+    <style>
+        .hidden {
+            display: none;
+        }
+
+        .center {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 80%;
+        }
+
+        .title-logo {
+            height: 3.2rem;
+            vertical-align: -0.4rem;
+            display: inline-block;
+            margin-right: 0.2rem;
+        }
+
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 1.5em !important;
+        }
+
+        .sortable:hover {
+            background-color: #f5f5f5;
+        }
+
+        .sort-icon {
+            position: absolute;
+            right: 0.5em;
+            color: #3273dc;
+        }
+
+        .sort-active {
+            background-color: #f0f8ff;
+            border-bottom: 2px solid #3273dc !important;
+        }
+
+        .table-container {
+            padding: 0.5rem;
+        }
+
+        .table {
+            border: none !important;
+            margin-bottom: 0 !important;
+        }
+
+        .table th,
+        .table td {
+            border-left: none !important;
+            border-right: none !important;
+        }
+
+        .table thead th {
+            border-top: none !important;
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: none !important;
+        }
+
+        /* Model group background colors */
+        .model-group-open-weight {
+            background-color: rgba(0, 0, 255, 0.1) !important;
+            /* blue!10 */
+        }
+
+        .model-group-closed-weight {
+            background-color: rgba(34, 139, 34, 0.15) !important;
+            /* ForestGreen!15 */
+        }
+
+        .model-group-safety-tuned {
+            background-color: rgba(209, 0, 55, 0.15) !important;
+            /* RubineRed!15 */
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://kit.fontawesome.com/f8ddf9854a.js" crossorigin="anonymous"></script>
+    <meta charset="utf-8">
+    <meta name="description"
+        content="HoliSafe: Holistic Safety Benchmarking and Modeling with Safety Meta Token for Vision-Language Model">
+    <meta name="keywords"
+        content="Safety, Alignment, Large Vision Language Model, Large Language Model, Large Multimodal Model, artificial intelligence, AI, AGI, artificial general intelligence">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HoliSafe: Holistic Safety Benchmarking and Modeling with Safety Meta Token for Vision-Language Model</title>
+
+    <link rel="icon" href="./static/images/holisafe_logo.png">
+
+    <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+
+    <link rel="stylesheet" href="./static/css/bulma.min.css">
+    <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+    <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+    <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+    <link rel="stylesheet" href="./static/css/index.css">
+    <link rel="stylesheet" href="./static/css/leaderboard.css">
+    <script type="text/javascript" src="static/js/sort-table.js" defer></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script defer src="./static/js/fontawesome.all.min.js"></script>
+    <script src="./static/js/bulma-carousel.min.js"></script>
+    <script src="./static/js/bulma-slider.min.js"></script>
+    <script src="./static/js/index.js"></script>
+    <script src="./static/js/question_card.js"></script>
+    <script src="./data/results/data_setting.js" defer></script>
+    <script src="./data/results/model_scores.js" defer></script>
+    <script src="./visualizer/data/data_public.js" defer></script>
+    <script>
+        let currentSortColumn = null;
+        let isAscending = true;
+
+        function formatHeader(header) {
+            // Format headers with subscripts
+            return header.replace(/S_I/g, 'S<sub>I</sub>')
+                .replace(/S_T/g, 'S<sub>T</sub>')
+                .replace(/U_I/g, 'U<sub>I</sub>')
+                .replace(/U_T/g, 'U<sub>T</sub>');
+        }
+
+        function getSortIcon(isCurrentColumn, isAsc) {
+            if (!isCurrentColumn) return '';
+            return isAsc ?
+                '<i class="fas fa-sort-amount-up sort-icon"></i>' :
+                '<i class="fas fa-sort-amount-down sort-icon"></i>';
+        }
+
+        function findBestAndSecondBest(data, columnIndex, headers) {
+            if (columnIndex === 0) return { best: null, secondBest: null }; // Skip for model names
+
+            const values = data.map(row => parseFloat(row[columnIndex]));
+            const sorted = [...new Set(values)].sort((a, b) => {
+                // For columns with ↑, higher is better. For ↓, lower is better
+                const isAscending = headers[columnIndex].includes('↑');
+                return isAscending ? b - a : a - b;
+            });
+
+            return {
+                best: sorted[0],
+                secondBest: sorted[1]
+            };
+        }
+
+        function sortData(data, columnIndex, ascending) {
+            return [...data].sort((a, b) => {
+                if (columnIndex === 0) {
+                    // Sort strings (model names)
+                    return ascending ?
+                        a[columnIndex].localeCompare(b[columnIndex]) :
+                        b[columnIndex].localeCompare(a[columnIndex]);
+                } else {
+                    // Sort numbers
+                    return ascending ?
+                        parseFloat(a[columnIndex]) - parseFloat(b[columnIndex]) :
+                        parseFloat(b[columnIndex]) - parseFloat(a[columnIndex]);
+                }
+            });
+        }
+
+        function getModelGroupClass(modelName) {
+            // Open-weight VLMs (blue!10)
+            if (modelName.includes('LLaVA-v1.5') ||
+                modelName.includes('InternVL') ||
+                modelName.includes('Qwen') ||
+                modelName.includes('Gemma3')) {
+                return 'model-group-open-weight';
+            }
+            // Closed-weight VLMs (ForestGreen!15)
+            if (modelName.includes('GPT') ||
+                modelName.includes('Claude') ||
+                modelName.includes('Gemini')) {
+                return 'model-group-closed-weight';
+            }
+            // Safety-tuned VLMs (RubineRed!15)
+            if (modelName.includes('VLGuard') ||
+                modelName.includes('SPA-VL') ||
+                modelName.includes('SafeLLaVA')) {
+                return 'model-group-safety-tuned';
+            }
+            return '';
+        }
+
+        function createTableFromCSV(csvData, containerId) {
+            try {
+                console.log('Creating table from CSV data:', csvData);
+                const rows = csvData.trim().split('\n').map(row => row.split(','));
+                const headers = rows[0];
+                let data = rows.slice(1);
+
+                console.log('Parsed headers:', headers);
+                console.log('Parsed data:', data);
+
+                // Pre-calculate best and second-best for each column
+                const bestScores = headers.map((_, i) => findBestAndSecondBest(data, i, headers));
+
+                function updateTable(sortedData = data) {
+                    const tableHTML = `
+                        <div class="table-container" style="overflow-x: auto;">
+                            <table class="table is-hoverable">
+                                <thead>
+                                    <tr>
+                                        ${headers.map((header, index) => `
+                                            <th class="sortable ${currentSortColumn === index ? 'sort-active' : ''}" 
+                                                onclick="handleSort(${index})">
+                                                ${formatHeader(header)}
+                                                ${getSortIcon(currentSortColumn === index, isAscending)}
+                                            </th>
+                                        `).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${sortedData.map(row => `
+                                        <tr class="${getModelGroupClass(row[0])}">
+                                            ${row.map((cell, colIndex) => {
+                        const value = parseFloat(cell);
+                        const scores = bestScores[colIndex];
+
+                        if (colIndex === 0) {
+                            // Make SafeLLaVA model names bold
+                            return cell.includes('SafeLLaVA') ?
+                                `<td><strong>${cell}</strong></td>` :
+                                `<td>${cell}</td>`;
+                        }
+
+                        if (value === scores.best) {
+                            return `<td><b>${cell}</b></td>`;
+                        } else if (value === scores.secondBest) {
+                            return `<td><u>${cell}</u></td>`;
+                        }
+                        return `<td>${cell}</td>`;
+                    }).join('')}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+
+                    const container = document.getElementById(containerId);
+                    if (!container) {
+                        console.error('Container not found:', containerId);
+                        return;
+                    }
+                    container.innerHTML = tableHTML;
+                }
+
+                // Initial table render
+                updateTable();
+
+                // Add global sort handler
+                window.handleSort = function (columnIndex) {
+                    if (currentSortColumn === columnIndex) {
+                        // Toggle sort direction if same column is clicked
+                        isAscending = !isAscending;
+                    } else {
+                        // New column, default to ascending
+                        currentSortColumn = columnIndex;
+                        isAscending = true;
+                    }
+
+                    const sortedData = sortData(data, columnIndex, isAscending);
+                    updateTable(sortedData);
+                };
+
+            } catch (error) {
+                console.error('Error creating table:', error);
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.innerHTML = `<div class="notification is-danger">Error creating table: ${error.message}</div>`;
+                }
+            }
+        }
+
+        // Function to fetch and load CSV file
+        async function loadCSVFile(filePath, containerId) {
+            try {
+                console.log('Loading CSV file from:', filePath);
+                const response = await fetch(filePath);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const csvData = await response.text();
+                console.log('CSV data loaded successfully');
+                createTableFromCSV(csvData, containerId);
+            } catch (error) {
+                console.error('Error loading CSV file:', error);
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.innerHTML = `<div class="notification is-danger">Error loading CSV file: ${error.message}</div>`;
+                }
+            }
+        }
+
+        // Wait for DOM to be fully loaded
+        window.addEventListener('load', function () {
+            console.log('Window loaded, attempting to load CSV file');
+            loadCSVFile('./static/claude_judge.csv', 'claude-judge-table');
+        });
+    </script>
+</head>
+
+<body>
+
+
+
+    <section class="hero">
+        <div class="hero-body">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered">
+                    <div class="column has-text-centered">
+                        <h1 class="title is-1 publication-title is-bold">
+                            <img src="static/images/holisafe_logo_v2.png" class="title-logo" />: Holistic Safety
+                            Benchmarking
+                            and Modeling with Safety Meta Token for Vision-Language Model
+                        </h1>
+                        <!-- <h2 class="subtitle is-3 publication-subtitle">
+            Cross-Modality Safety Alignment
+          </h2> -->
+                        <div class="is-size-5 publication-authors">
+                            <!-- Paper authors -->
+                            <span class="author-block">
+                                <a href="https://youngwanlee.github.io/" target="_blank">Youngwan Lee</a><sup
+                                    style="color:#aa0404;">1 </sup><sup style="color:#1b5dd7;">2</sup>,</span>
+                            <span class="author-block">
+                                <a href="https://scholar.google.com/citations?user=9awek3YAAAAJ&hl=en"
+                                    target="_blank">Kangsan Kim</a><sup style="color:#1b5dd7;">2</sup>,</span>
+                            <span class="author-block">
+                                <a href="https://pkyong95.github.io/" target="_blank">Kwanyong Park</a><sup
+                                    style="color:#ecaa2e;">3</sup>,</span>
+                            <span class="author-block">
+                                <a href="https://ilchaejung.github.io/" target="_blank">Ilchae Jung</a><sup
+                                    style="color:#aa0404;">1</sup>,</span>
+                            <span class="author-block">
+                                <a target="_blank">Sujin Jang</a><sup style="color:#aa0404;">1</sup>,</span>
+                            <span class="author-block">
+                            </span>
+                            <div style="width:100%; height:0.1em;"></div>
+                            <span class="author-block">
+                                <a href="https://seanie12.github.io/" target="_blank">Seanie Lee</a><sup
+                                    style="color:#1b5dd7;">2</sup>,</span>
+                            <span class="author-block">
+                                <a href="https://scholar.google.com/citations?user=6goOQh8AAAAJ&hl=en"
+                                    target="_blank">Yong-Ju Lee</a><sup style="color:#aa0404;">1</sup>,</span>
+                            <span class="author-block">
+                                <a href="http://www.sungjuhwang.com/" target="_blank">Sung Ju Hwang</a><sup
+                                    style="color:#1b5dd7;">2 </sup><sup style="color:#439b08;">4</sup>
+                            </span>
+                        </div>
+                        <span class="author-block">
+                        </span>
+                        <div style="width:100%; height:0.05em;"></div>
+                        <div class="is-size-5 publication-authors">
+                            <span class="author-block"><sup style="color:#aa0404;">1</sup>ETRI,</span>
+                            <span class="author-block"><sup style="color:#1b5dd7;">2</sup>KAIST,</span>
+                            <span class="author-block"><sup style="color:#ecaa2e;">3</sup>University of Seoul</span>
+                            <span class="author-block"><sup style="color:#439b08;">4</sup>DeepAuto.ai</span>
+                        </div>
+
+
+
+                        <div class="column has-text-centered">
+                            <div class="publication-links">
+                                <!-- PDF Link. -->
+                                <span class="link-block">
+                                    <!-- @PAN TODO: change links -->
+                                    <a href="https://www.arxiv.org/pdf/2506.04704"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </span>
+                                        <span>Paper</span>
+                                    </a>
+                                </span>
+                                <span class="link-block">
+                                    <a href="https://huggingface.co/datasets/etri-vilab/holisafe"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <p style="font-size:18px">🤗</p>
+                                        </span>
+                                        <span>Dataset (Coming Soon)</span>
+                                    </a>
+                                </span>
+                                <span class="link-block">
+                                    <a href="https://github.com/youngwanLEE/holisafe"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fab fa-github"></i>
+                                        </span>
+                                        <span>Code (Coming Soon)</span>
+                                    </a>
+                                </span>
+                                <!-- Dataset Link. -->
+
+                                <!-- Leaderboard Link. -->
+                                <span class="link-block">
+                                    <a href="#leaderboard" class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon has-text-white">
+                                            <i class="fa-solid fa-trophy"></i>
+                                            <!-- <p style="font-size:18px">🏆</p> -->
+                                        </span>
+                                        <span>Leaderboard</span>
+                                    </a>
+                                </span>
+                                <span class="link-block">
+                                    <a href="#examples"
+                                       class="external-link button is-normal is-rounded is-dark">
+                                      <span class="icon has-text-white">
+                                        <i class="fa-solid fa-book"></i>
+                                      </span>
+                                      <span>Examples</span>
+                                    </a>
+                                  </span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <style>
+        .center {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 80%;
+        }
+    </style>
+    <section class="hero teaser">
+        <div class="container is-max-desktop">
+            <div class="content">
+                <div class="has-text-centered" style="margin-top: -2rem;">
+                    <p style="color: rgb(202, 69, 69); font-weight: bold; font-size: 1.2em;">⚠️ Warning: this project page contains harmful content. ⚠️ </p>
+                    <img src="static/images/main_qual_revise.png" alt="main qualitative comparisons" width="100%" />
+                </div>
+                <p class="has-text-justified">
+                    An example of the HoliSafe, a comprehensive dataset that covers all combinations of image and text
+                    safeness (safe/unsafe image with safe/unsafe text), and a corresponding evaluation benchmark,
+                    HoliSafe-Bench, which poses novel challenges to modern VLMs. Unlike other safety-tuned VLMs
+                    (VLGuard and SPA-VL) susceptible to jailbreaks and unsafe responses, SafeLLaVA-7B robustly defends
+                    against such attacks.
+                </p>
+            </div>
+        </div>
+        </div>
+    </section>
+
+
+    <!-- Paper abstract -->
+    <!-- DATASET SECTION -->
+    <section class="hero is-light is-small">
+        <div class="hero-body has-text-centered">
+            <h1 class="title is-1 mmmu">
+                <span class="mmmu" style="vertical-align: middle">Abstract</span>
+        </div>
+        </div>
+    </section>
+    <section class="section">
+        <div class="container">
+            <div class="columns is-centered has-text-centered">
+                <div class="column is-four-fifths">
+                    <div class="content has-text-justified">
+                        <p>
+                            Despite emerging efforts to enhance the safety of Vision-Language Models (VLMs), current
+                            approaches face two main shortcomings. 1) Existing safety-tuning datasets and benchmarks
+                            only partially consider how image-text interactions can yield harmful content, often
+                            overlooking contextually unsafe outcomes from seemingly benign pairs. This narrow coverage
+                            leaves VLMs vulnerable to jailbreak attacks in unseen configurations. 2) Prior methods rely
+                            primarily on data-centric tuning, with limited architectural innovations to intrinsically
+                            strengthen safety. We address these gaps by introducing a holistic safety-tuning dataset and
+                            benchmark, <b>HoliSafe</b>, that spans all five safe/unsafe image-text combinations,
+                            providing a more robust basis for both training and evaluation. We further propose
+                            <b>SafeLLaVA</b>, a novel VLM augmented with a learnable safety meta token and a dedicated
+                            safety head. The meta token encodes harmful visual cues during training, intrinsically
+                            guiding the language model toward safer responses, while the safety head offers
+                            interpretable harmfulness classification aligned with refusal rationales. Experiments show
+                            that SafeLLaVA, trained on HoliSafe, achieves state-of-the-art safety performance across
+                            multiple VLM benchmarks. Additionally, our <b>HoliSafe-Bench</b> itself reveals critical
+                            vulnerabilities in existing models. We hope that HoliSafe and SafeLLaVA will spur further
+                            research into robust and interpretable VLM safety, expanding future avenues for multimodal
+                            alignment.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- End paper abstract -->
+
+    <!-- DATASET SECTION -->
+    <section class="hero is-light is-small">
+        <div class="hero-body has-text-centered">
+            <h1 class="title is-1 mmmu">
+                <img src="static/images/holisafe_logo.png" style="width:1em;vertical-align: middle" alt="Logo" />
+                <span class="mmmu" style="vertical-align: middle">HoliSafe: Safety-tuning Dataset & Benchmark </span>
+            </h1>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="columns is-centered has-text-centered">
+                <div class="column is-four-fifths">
+                    <h2 class="title is-3">Overview</h2>
+                    <div class="content has-text-justified">
+                        <p>
+                            Unlike prior works that cover only a subset of image-text safeness combinations (e.g.,
+                            unsafe image with safe text), we introduce a new holistic safety-tuning dataset and
+                            benchmark, called <b>HoliSafe</b>, that systematically covers all five image-text safeness
+                            combinations: (1) unsafe image + unsafe text (<span
+                                style="font-variant: small-caps;">U<sub>i</sub>U<sub>t</sub></span>), (2) unsafe image +
+                            safe text (<span style="font-variant: small-caps;">U<sub>i</sub>S<sub>t</sub></span>), (3)
+                            safe image + unsafe text (<span
+                                style="font-variant: small-caps;">S<sub>i</sub>U<sub>t</sub></span>), (4) safe image +
+                            safe text yielding unsafe content (<span
+                                style="font-variant: small-caps;">S<sub>i</sub>S<sub>t</sub></span> → <span
+                                style="font-variant: small-caps;">U</span>), and (5) safe image + safe text yielding
+                            safe content (<span style="font-variant: small-caps;">S<sub>i</sub>S<sub>t</sub></span> →
+                            <span style="font-variant: small-caps;">S</span>).
+                            <!-- The detailed subject coverage and statistics are detailed in the figure. The questions in our benchmark were manually collected by a team of college students (including coauthors) from various disciplines and subjects, drawing from online sources, textbooks, and lecture materials. -->
+                        </p>
+                        <img src="static/images/benchmark_comparison.png" class="center"
+                            style="width: 80%; margin: 2rem auto;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="columns is-centered has-text-centered">
+                <div class="column is-four-fifths">
+                    <h2 class="title is-3">Statistics</h2>
+                    <div class="content has-text-justified">
+                        <p>
+                            HoliSafe defines a safety taxonomy with 7 main categories with 18 subcategories which are
+                            commonly encountered in real-world scenarios. We collect a total of 6,782 images and 15,114
+                            instruction-response pairs. We split the dataset into a training set, 4,983 (74%) images,
+                            for safetytuning and a test set, 1,799 (26%) for Holisafe-Bench. Training and Test splits
+                            have 10,951 and 4,163 instruction-response pairs, respectively.
+                        </p>
+                        <img src="static/images/taxonomy.png" class="center" style="width: 100%; margin: 2rem auto;">
+                        <img src="static/images/data_distribution.png" class="center"
+                            style="width: 80%; margin: 2rem auto;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SafeLLaVA -->
+    <section class="hero is-light is-small">
+        <div class="hero-body has-text-centered">
+            <h1 class="title is-1 mmmu">
+                <img src="static/images/safellava_v3.png" style="width:2em;vertical-align: middle" alt="Logo" />
+                <span class="mmmu" style="vertical-align: middle">A Safety-Tuned VLM with Safety Meta Token
+                </span>
+            </h1>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="columns is-centered has-text-centered">
+                <div class="column is-four-fifths">
+                    <h2 class="title is-3">SafeLLaVA</h2>
+                    <div class="content has-text-justified">
+                        <p>
+                            We propose a simple yet safety-effective VLM architecture. It incorporates a <em>learnable
+                                image <b>S</b>afety <b>M</b>eta <b>T</b>oken</em> (<code>[SMT]</code>) and a safety head that not only
+                            classifies visually harmful content, acting as a visual safety guard model, but also
+                            provides the LLM with intrinsic safety cues for generating safer responses.
+                            To this end, The <code>[SMT]</code> is appended at the end of visual tokens, which allows
+                            for
+                            attention to visual tokens within both the vision encoder and decoder of the LLM.
+                        </p>
+                        <img src="static/images/safellava_mascot.png" class="center"
+                            style="width: 100%; margin: 2rem auto;">
+                        <br>
+                        <p>
+                            We visualize average attention weights from generated tokens to <code>[SMT]</code> and
+                            visual tokens
+                            across layers of the LLM, revealing two key phenomena: i) <code>[SMT]</code> exhibits a
+                            bimodal attention
+                            pattern, strongest in early and late layers, consistent with similar phenomena observed for
+                            special tokens in prior language model research. This suggests <code>[SMT]</code> functions
+                            across
+                            decoding stages, from early context integration and safety constraint embedding to
+                            late-stage constraint enforcement and final safety checks. ii) Generated tokens attend more
+                            to <code>[SMT]</code> than to visual tokens across layers. This highlights
+                            <code>[SMT]</code>'s salience, suggesting
+                            its critical role in guiding the LLM's response from a safety perspective compared to raw
+                            visual input.
+                            Collectively, these attention patterns underscore the pivotal role of the safety meta token
+                            in influencing the LLM's decoding process for safety alignment.
+                        </p>
+                        <img src="static/images/attention_analysis.png" class="center"
+                            style="width: 100%; margin: 2rem auto;">
+                        <br>
+                        <p></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- End SafeLLaVA -->
+
+    <!-- RESULTS SECTION -->
+    <section class="hero is-light is-small">
+        <div class="hero-body has-text-centered">
+            <h1 class="title is-1 mmmu">Experiment Results</h1>
+        </div>
+    </section>
+    <section class="section">
+        <div class="container">
+
+            <!-------------------------------------------------------------------- RESULTS SECTION -------------------------------------------------------------------->
+            <div class="columns is-centered m-4">
+                <div class="column is-full has-text-centered content">
+                    <h2 class="title is-3" id="leaderboard">Leaderboard on HoliSafe-Bench</h2>
+                    <div class="content">
+                        <div class="content has-text-justified">
+                            <p>
+                                Inspired by the LLM-as-judge paradigm, we employ three closed-weight, proprietary AI
+                                models, e.g., Claude-3.5-Sonnet, GPT-4o and Gemini-2.0-Flash, as automated safety
+                                judges.
+                                Since our HoliSafe dataset's instruction–response pairs were generated using GPT-4o,
+                                employing diverse judges rather than relying solely on GPT-4o was crucial to mitigate
+                                evaluation bias and ensure robust, impartial assessment.
+                                In addition, we employ automatic string matching evaluation widely used in LLM
+                                benchmarks, by classifying any response to a harmful request into safe if the response
+                                contains one of the predefined refusal responses, e.g., "I can't assist".
+                                We quantify performance using Attack Success Rate (ASR)—the fraction of unsafe inputs
+                                for which a VLM erroneously complies—and Refusal Rate (RR), defined as one minus the
+                                proportion of safe inputs for which the VLM correctly provides a helpful answer.
+                                mASR denotes mean Attack Success Rate across all unsafe types.
+                            </p>
+                            <p> We extensively benchmark 17 VLM models, including both open-source and proprietary
+                                models, on our HoliSafe-Bench using three proprietary AI models as judges.
+                                <b><span style="color: rgba(100, 100, 255, 0.8);">Purple</span></b> denotes
+                                <em><span style="color: rgba(100, 100, 255, 0.8);">open-weight VLMs</span></em>,
+                                <b><span style="color: rgba(34, 139, 34, 0.8);">green</span></b> means <em><span style="color: rgba(34, 139, 34, 0.8);">closed-weight
+                                    VLMs</span></em>,
+                                and <b><span style="color: rgba(209, 0, 55, 0.6);">red</span></b> means <em><span style="color: rgba(209, 0, 55, 0.6);">safety-tuned
+                                    VLMs</span></em>.
+                                The best-performing model in each category is <b>in-bold</b>, and the second best is
+                                <u>underlined</u>.
+                            </p>
+                        </div>
+
+
+                        <div class="buttons is-centered mb-4">
+                            <button class="button judge-button is-active" onclick="switchTable('claude')">
+                                <span class="icon">
+                                    <i class="fas fa-table"></i>
+                                </span>
+                                <span>Judge: Claude-3.5-Sonnet</span>
+                            </button>
+                            <button class="button judge-button" onclick="switchTable('gpt4')">
+                                <span class="icon">
+                                    <i class="fas fa-table"></i>
+                                </span>
+                                <span>Judge: GPT-4o</span>
+                            </button>
+                            <button class="button judge-button" onclick="switchTable('gemini')">
+                                <span class="icon">
+                                    <i class="fas fa-table"></i>
+                                </span>
+                                <span>Judge: Gemini-2.0-Flash</span>
+                            </button>
+                            <button class="button judge-button" onclick="switchTable('sm')">
+                                <span class="icon">
+                                    <i class="fas fa-table"></i>
+                                </span>
+                                <span>String Matching</span>
+                            </button>
+                        </div>
+
+                        <div id="claude-judge-table"></div>
+                        <div id="gpt4-judge-table" style="display: none;"></div>
+                        <div id="gemini-judge-table" style="display: none;"></div>
+                        <div id="sm-judge-table" style="display: none;"></div>
+
+                        <script>
+                            let currentTable = 'claude';
+
+                            function switchTable(tableId) {
+                                // Hide all tables
+                                document.getElementById('claude-judge-table').style.display = 'none';
+                                document.getElementById('gpt4-judge-table').style.display = 'none';
+                                document.getElementById('gemini-judge-table').style.display = 'none';
+                                document.getElementById('sm-judge-table').style.display = 'none';
+
+                                // Show selected table
+                                document.getElementById(`${tableId}-judge-table`).style.display = 'block';
+
+                                // Update button styles
+                                document.querySelectorAll('.button').forEach(button => {
+                                    button.classList.remove('is-active');
+                                });
+                                document.querySelector(`button[onclick="switchTable('${tableId}')"]`).classList.add('is-active');
+
+                                currentTable = tableId;
+                            }
+
+                            // Load all tables when the page loads
+                            document.addEventListener('DOMContentLoaded', function () {
+                                loadCSVFile('./static/claude_judge.csv', 'claude-judge-table');
+                                loadCSVFile('./static/gpt4o_judge.csv', 'gpt4-judge-table');
+                                loadCSVFile('./static/gemini_judge.csv', 'gemini-judge-table');
+                                loadCSVFile('./static/sm_judge.csv', 'sm-judge-table');
+                            });
+                        </script>
+
+                        <style>
+                            .button.is-active {
+                                background-color: #3273dc !important;
+                                color: white !important;
+                                border-color: #3273dc !important;
+                            }
+
+                            .judge-button {
+                                background-color: #f5f5f5;
+                                color: #7a7a7a;
+                                border-color: #dbdbdb;
+                                transition: all 0.3s ease;
+                                font-size: 0.85rem !important;
+                                padding: 0.5rem 1rem;
+                            }
+
+                            .judge-button:hover {
+                                background-color: #eeeeee;
+                                color: #363636;
+                                border-color: #b5b5b5;
+                            }
+
+                            .buttons {
+                                justify-content: center;
+                                flex-wrap: nowrap;
+                            }
+
+                            .button {
+                                margin: 0 0.3rem;
+                                min-width: 170px;
+                            }
+
+                            .button .icon {
+                                margin-right: 0.3rem;
+                            }
+                        </style>
+                        <!-- Analysis of the leaderboard -->
+                        <div class="columns is-centered has-text-centered">
+                            <div class="content">
+                                <div class="content has-text-justified" style="margin-top: 3rem;">
+                                    <h2 class="title is-3 has-text-centered">
+                                        <span style="font-size: 1.2em; vertical-align: middle;">💡</span>
+                                        <span style="vertical-align: middle;"> Key Empirical Insights</span>
+                                    </h2>
+                                    <p>
+                                        <b>1. Unsafe images pose greater risks than unsafe text:</b> Analysis shows that U<sub>I</sub>S<sub>T</sub> scenarios consistently yield higher ASRs compared to U<sub>I</sub>U<sub>T</sub> and S<sub>I</sub>U<sub>T</sub> conditions across all models and judges, indicating VLMs' heightened vulnerability to unsafe visual inputs.
+                                    </p>
+                                    <p>
+                                        <b>2. <span style="color: rgba(100, 100, 255, 0.8);">Open-weight VLMs</span>
+                                            show highest vulnerability:</b> These models exhibit the highest ASRs
+                                        (52-78%) with refusal rates of 0.5-2.5% on safe inputs, demonstrating
+                                        significant safety challenges.
+                                    </p>
+                                    <p>
+                                        <b>3. <span style="color: rgba(34, 139, 34, 0.8);">Closed-weight VLMs</span>
+                                            achieve moderate safety:</b> While showing improved safety (e.g.,
+                                        Claude-3.5-Sonnet), these models still face challenges with ASRs up to 67% under
+                                        certain judges, though maintaining low refusal rates (0-1.7%).
+                                    </p>
+                                    <p>
+                                        <b>4. <span style="color: rgba(209, 0, 55, 0.6);">Safety-tuned VLMs</span>
+                                            achieve the lowest ASRs overall,
+                                            albeit with modestly higher refusal rates.:</b> SafeLLaVA models achieve the
+                                        lowest ASRs (below 7% under Claude, below 15% under other judges), with
+                                        SafeLLaVA-13B reaching just 1.09% ASR, albeit with a slightly higher refusal
+                                        rate of 6.09%.
+                                    </p>
+                                    <p>
+                                        <b>5. Judge consistency in model ranking:</b> While absolute metrics vary by
+                                        judge, the relative safety ranking (open-weight ≫ closed-weight ≫ safety-tuned)
+                                        remains consistent across all evaluation methods.
+                                    </p>
+                                    <p>
+                                        <b>6. Strong correlation with string matching:</b> Automatic string matching
+                                        shows high concordance with AI judges (ρ=0.98 with GPT-4o/Gemini), suggesting
+                                        its viability as a cost-effective safety evaluation method.
+                                    </p>
+                                </div>
+                                <img src="static/images/correlation.png" class="center"
+                                    style="width: 45%; margin: 2rem auto;">
+                            </div>
+                        </div>
+                        <!-- Other results with static/other_results.png -->
+                        <div class="columns is-centered has-text-centered">
+                            <div class="content">
+                                <div class="content has-text-justified" style="margin-top: 3rem;">
+                                    <h2 class="title is-3 has-text-centered">
+                                        <span style="vertical-align: middle;"> Other Results</span>
+                                    </h2>
+                                    <p>
+                                        We show the win rate of our SafeLLaVA-7B compared to safety-tuned VLMs (e.g., VLGuard and SPA-AL) and proprietary VLMs (e.g., GPT-4o, Claude-3.5-Sonnet, and Gemini-2.0-Flash).
+                                        We use GPT-4o, Claude-3.5-Sonnet, and Gemini-2.0-Flash as judges.
+                                        <img src="static/images/win_rate.png" class="center" style="width: 85%; margin: 2rem auto;">
+                                    </p>
+                                    <p>
+                                        Our SafeLLaVA outperforms other safety-tuned VLMs (e.g., VLGuard and SPA-VL) on different VLM safety benchmarks while achieving comparable helpfulness on general VLM benchmarks (MMMU, MMStar, etc).
+                                        Furthermore, SafeLLaVA-7B surpasses other vision guard models, such as LLaMA-Guard4-12B, LLaMA-Guard3-11B-Vision, LLaVAGuard-7B and ShieldGemma2-4B-IT.
+                                    </p>
+                                </div>
+                                <img src="static/images/other_results.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;">
+                                <!-- <img src="static/images/category-wise-gpt-4o.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;">
+                                    <img src="static/images/category-wise-claude.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;"> -->
+                                </div>
+                        </div>
+                        <div class="columns is-centered has-text-centered">
+                            <div class="content">
+                                <div class="content has-text-justified" style="margin-top: 3rem;">
+                                    <h2 class="title is-3 has-text-centered">
+                                        <span style="vertical-align: middle;"> Further Analysis</span>
+                                    </h2>
+                                    <img src="static/images/category-wise-gpt-4o.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;">
+                                    <img src="static/images/category-wise-claude.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;">
+                                    <img src="static/images/category-wise-gemini.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;">
+                                    <img src="static/images/category-wise-sm.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;">
+                                    <img src="static/images/type-gpt.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;">
+                                    <img src="static/images/type-claude.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;">
+                                    <img src="static/images/type-gemini.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;">
+                                    <img src="static/images/type-sm.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ------------------------------------------------------------------ Error Example  -------------------------------------------------------------------->
+
+        <div class="columns is-centered m-6">
+      <div class="column is-full has-text-centered content">
+        <h2 class="title is-3" id="examples">Qualitative Comparisons</h2>
+        <div id="results-carousel" class="carousel results-carousel">
+          <div class="box m-5">
+            <div class="content has-text-centered">
+              <img src="static/images/qual_comparison_1.png" alt="grade-lv" width="100%"/>
+            </div>
+          </div>
+          <div class="box m-5">
+            <div class="content has-text-centered">
+              <img src="static/images/qual_comparison_2.png" alt="grade-lv" width="100%"/>
+            </div>
+          </div>
+          <div class="box m-5">
+            <div class="content has-text-centered">
+              <img src="static/images/qual_comparison_3.png" alt="grade-lv" width="100%"/>
+            </div>
+          </div>
+          <div class="box m-5">
+            <div class="content has-text-centered">
+              <img src="static/images/qual_comparison_4.png" alt="grade-lv" width="100%"/>
+            </div>
+          </div>
+          <div class="box m-5">
+            <div class="content has-text-centered">
+              <img src="static/images/qual_comparison_5.png" alt="grade-lv" width="100%"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <!-------------------------------------------------------------------- RESULTS SECTION ------------------------------------------------------------------ -->
+
+
+        </div>
+    </section>
+
+
+    <!-- @PAN TODO: bibtex -->
+    <section class="section" id="BibTeX">
+        <div class="container is-max-desktop content">
+            <h2 class="title is-3 has-text-centered">BibTeX</h2>
+            <pre><code>
+      @article{lee2025holisafe,
+        title={HoliSafe: Holistic Safety Benchmarking and Modeling with Safety Meta Token for Vision-Language Model},
+        author={Lee, Youngwan and Kim, Kangsan and Park, Kwanyong and Jung, Ilcahe and Jang, Soojin and Lee, Seanie and Lee, Yong-Ju and Hwang, Sung Ju},
+        journal={arXiv preprint arXiv:2506.04704},
+        year={2025},
+        url={https://arxiv.org/abs/2506.04704},
+        archivePrefix={arXiv},
+        eprint={2506.04704},
+        primaryClass={cs.AI},
+      }
+</code></pre>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="columns is-centered">
+            <div class="column is-8">
+                <div class="content">
+                    <p>
+                        This website is website adapted from <a href="https://nerfies.github.io/">Nerfies</a> and <a
+                            href="https://mathvista.github.io/">MathVista</a>, licensed under a <a rel="license"
+                            href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+                            Commons Attribution-ShareAlike 4.0 International License</a>.
+                    </p>
+                    <p class="has-text-centered">Total clicks: <span id="busuanzi_value_site_pv"></span></p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>
