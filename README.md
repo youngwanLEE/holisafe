@@ -34,7 +34,7 @@ Despite emerging efforts to enhance the safety of Vision-Language Models (VLMs),
 </p>
 
 ## TODO List
-- ✅ Releasing HoliSafe-Bench dataset
+- [x] Releasing HoliSafe-Bench dataset
 - [ ] Releasing HoliSafe training dataset
 - [ ] HoliSafe-Bench evaluation code
 - [ ] Training SafeLLaVA code
