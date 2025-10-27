@@ -87,11 +87,11 @@
     <script src="https://kit.fontawesome.com/f8ddf9854a.js" crossorigin="anonymous"></script>
     <meta charset="utf-8">
     <meta name="description"
-        content="HoliSafe: Holistic Safety Benchmarking and Modeling with Safety Meta Token for Vision-Language Model">
+        content="HoliSafe: Holistic Safety Benchmarking and Modeling for Vision-Language Model">
     <meta name="keywords"
         content="Safety, Alignment, Large Vision Language Model, Large Language Model, Large Multimodal Model, artificial intelligence, AI, AGI, artificial general intelligence">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>HoliSafe: Holistic Safety Benchmarking and Modeling with Safety Meta Token for Vision-Language Model</title>
+    <title>HoliSafe: Holistic Safety Benchmarking and Modeling for Vision-Language Model</title>
 
     <link rel="icon" href="./static/images/holisafe_logo.png">
 
@@ -115,7 +115,6 @@
     <script src="./data/results/data_setting.js" defer></script>
     <script src="./data/results/model_scores.js" defer></script>
     <script src="./visualizer/data/data_public.js" defer></script>
-    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
     <script>
         let currentSortColumn = null;
         let isAscending = true;
@@ -168,11 +167,19 @@
         }
 
         function getModelGroupClass(modelName) {
+            // Safety-tuned VLMs (RubineRed!15)
+            if (modelName.includes('VLGuard') ||
+                modelName.includes('SPA-VL') ||
+                modelName.includes('SafeLLaVA') ||
+                modelName.includes('SafeGemma-3') ||
+                modelName.includes('SafeQwen2.5-VL')) {
+                return 'model-group-safety-tuned';
+            }
             // Open-weight VLMs (blue!10)
             if (modelName.includes('LLaVA-v1.5') ||
                 modelName.includes('InternVL') ||
-                modelName.includes('Qwen') ||
-                modelName.includes('Gemma3')) {
+                modelName.includes('Qwen2.5-VL') ||
+                modelName.includes('Gemma-3')) {
                 return 'model-group-open-weight';
             }
             // Closed-weight VLMs (ForestGreen!15)
@@ -180,12 +187,6 @@
                 modelName.includes('Claude') ||
                 modelName.includes('Gemini')) {
                 return 'model-group-closed-weight';
-            }
-            // Safety-tuned VLMs (RubineRed!15)
-            if (modelName.includes('VLGuard') ||
-                modelName.includes('SPA-VL') ||
-                modelName.includes('SafeLLaVA')) {
-                return 'model-group-safety-tuned';
             }
             return '';
         }
@@ -226,8 +227,9 @@
                         const scores = bestScores[colIndex];
 
                         if (colIndex === 0) {
-                            // Make SafeLLaVA model names bold
-                            return cell.includes('SafeLLaVA') ?
+                            // Make certain safety-tuned model names bold
+                            const boldModels = ['SafeLLaVA', 'SafeQwen2.5-VL', 'SafeGemma-3'];
+                            return boldModels.some(name => cell.includes(name)) ?
                                 `<td><strong>${cell}</strong></td>` :
                                 `<td>${cell}</td>`;
                         }
@@ -321,7 +323,7 @@
                         <h1 class="title is-1 publication-title is-bold">
                             <img src="static/images/holisafe_logo_v2.png" class="title-logo" />: Holistic Safety
                             Benchmarking
-                            and Modeling with Safety Meta Token for Vision-Language Model
+                            and Modeling for Vision-Language Model
                         </h1>
                         <!-- <h2 class="subtitle is-3 publication-subtitle">
             Cross-Modality Safety Alignment
@@ -382,12 +384,12 @@
                                     </a>
                                 </span>
                                 <span class="link-block">
-                                    <a href="https://huggingface.co/datasets/etri-vilab/holisafe"
+                                    <a href="https://huggingface.co/datasets/etri-vilab/holisafe-bench"
                                         class="external-link button is-normal is-rounded is-dark">
                                         <span class="icon">
                                             <p style="font-size:18px">🤗</p>
                                         </span>
-                                        <span>Dataset (Coming Soon)</span>
+                                        <span>Dataset</span>
                                     </a>
                                 </span>
                                 <span class="link-block">
@@ -405,8 +407,8 @@
                                 <span class="link-block">
                                     <a href="#leaderboard" class="external-link button is-normal is-rounded is-dark">
                                         <span class="icon has-text-white">
-                                            <!-- <i class="fa-solid fa-trophy"></i> -->
-                                            <p style="font-size:18px">🏆</p>
+                                            <i class="fa-solid fa-trophy"></i>
+                                            <!-- <p style="font-size:18px">🏆</p> -->
                                         </span>
                                         <span>Leaderboard</span>
                                     </a>
@@ -415,7 +417,7 @@
                                     <a href="#examples"
                                        class="external-link button is-normal is-rounded is-dark">
                                       <span class="icon has-text-white">
-                                        <p style="font-size:18px">🖼️</p>
+                                        <i class="fa-solid fa-book"></i>
                                       </span>
                                       <span>Examples</span>
                                     </a>
@@ -440,11 +442,8 @@
         <div class="container is-max-desktop">
             <div class="content">
                 <div class="has-text-centered" style="margin-top: -2rem;">
-                    <p style="color: rgb(202, 69, 69); font-weight: bold; font-size: 1.2em;">⚠️ Disclaimer: Potentially Harmful Content ⚠️</p>
-                    <p style="color: rgb(202, 69, 69);">
-                        This project page presents research on enhancing the safety and benchmarking the robustness of Vision-Language Models (VLMs) against harmful content. To effectively demonstrate our methods and results, this page may contain examples of content that some viewers may find offensive, disturbing, or otherwise harmful.
-                    </p>
-                    <img src="static/images/main_qual_revise.png" alt="main qualitative comparisons" width="100%" />
+                    <p style="color: rgb(202, 69, 69); font-weight: bold; font-size: 1.2em;">⚠️ Warning: this project page contains harmful content. ⚠️ </p>
+                    <img src="static/images/main_qual_iclr.png" alt="main qualitative comparisons" width="100%" />
                 </div>
                 <p class="has-text-justified">
                     An example of the HoliSafe, a comprehensive dataset that covers all combinations of image and text
@@ -474,24 +473,16 @@
                 <div class="column is-four-fifths">
                     <div class="content has-text-justified">
                         <p>
-                            Despite emerging efforts to enhance the safety of Vision-Language Models (VLMs), current
-                            approaches face two main shortcomings. 1) Existing safety-tuning datasets and benchmarks
-                            only partially consider how image-text interactions can yield harmful content, often
-                            overlooking contextually unsafe outcomes from seemingly benign pairs. This narrow coverage
-                            leaves VLMs vulnerable to jailbreak attacks in unseen configurations. 2) Prior methods rely
-                            primarily on data-centric tuning, with limited architectural innovations to intrinsically
-                            strengthen safety. We address these gaps by introducing a holistic safety-tuning dataset and
-                            benchmark, <b>HoliSafe</b>, that spans all five safe/unsafe image-text combinations,
-                            providing a more robust basis for both training and evaluation. We further propose
-                            <b>SafeLLaVA</b>, a novel VLM augmented with a learnable safety meta token and a dedicated
-                            safety head. The meta token encodes harmful visual cues during training, intrinsically
-                            guiding the language model toward safer responses, while the safety head offers
-                            interpretable harmfulness classification aligned with refusal rationales. Experiments show
-                            that SafeLLaVA, trained on HoliSafe, achieves state-of-the-art safety performance across
-                            multiple VLM benchmarks. Additionally, our <b>HoliSafe-Bench</b> itself reveals critical
-                            vulnerabilities in existing models. We hope that HoliSafe and SafeLLaVA will spur further
-                            research into robust and interpretable VLM safety, expanding future avenues for multimodal
-                            alignment.
+                        Despite emerging efforts to enhance the safety of Vision-Language Models (VLMs), current approaches face two main shortcomings. 
+                        1) Existing safety-tuning datasets and benchmarks only partially consider how image-text interactions can yield harmful content, often overlooking contextually unsafe outcomes from seemingly benign pairs. 
+                        This narrow coverage leaves VLMs vulnerable to jailbreak attacks in unseen configurations. 
+                        2) Prior methods rely primarily on data-centric tuning, with limited architectural innovations to intrinsically strengthen safety. 
+                        We address these gaps by introducing a holistic safety dataset and benchmark, <b>HoliSafe</b>, that spans all five safe/unsafe image-text combinations, providing a more robust basis for both training and evaluation (<b>HoliSafe-Bench</b>). 
+                        We further propose a novel modular framework for enhancing VLM safety with a <b>visual guard module (VGM)</b> designed to assess the harmfulness of input images for VLMs. 
+                        This module endows VLMs with a <b>dual functionality</b>: they not only learn to generate safer responses but can also provide an interpretable harmfulness classification to justify their refusal decisions. 
+                        A significant advantage of this approach is its modularity; the VGM is designed as a plug-in component, allowing for seamless integration with diverse pre-trained VLMs across various scales. 
+                        Experiments show that Safe-VLM with VGM, trained on our HoliSafe, achieves state-of-the-art safety performance across multiple VLM benchmarks. 
+                        Additionally, the HoliSafe-Bench itself reveals critical vulnerabilities in existing VLM models. We hope that HoliSafe and VGM will spur further research into robust and interpretable VLM safety, expanding future avenues for multimodal alignment.
                         </p>
                     </div>
                 </div>
@@ -545,9 +536,9 @@
                         <p>
                             HoliSafe defines a safety taxonomy with 7 main categories with 18 subcategories which are
                             commonly encountered in real-world scenarios. We collect a total of 6,782 images and 15,114
-                            instruction-response pairs. We split the dataset into a training set, 4,983 (74%) images,
-                            for safetytuning and a test set, 1,799 (26%) for Holisafe-Bench. Training and Test splits
-                            have 10,951 and 4,163 instruction-response pairs, respectively.
+                            instruction-response pairs. We split the dataset into a training set, 4,983 (73.15%) images,
+                            for safetytuning and a test set, 1,796 (26.85%) for Holisafe-Bench. Training and Test splits
+                            have 10,215 and 4,031 instruction-response pairs, respectively.
                         </p>
                         <img src="static/images/taxonomy.png" class="center" style="width: 100%; margin: 2rem auto;">
                         <img src="static/images/data_distribution.png" class="center"
@@ -563,7 +554,7 @@
         <div class="hero-body has-text-centered">
             <h1 class="title is-1 mmmu">
                 <img src="static/images/safellava_v3.png" style="width:2em;vertical-align: middle" alt="Logo" />
-                <span class="mmmu" style="vertical-align: middle">A Safety-Tuned VLM with Safety Meta Token
+                <span class="mmmu" style="vertical-align: middle">Safety-Tuned VLMs with Visual Guard Module
                 </span>
             </h1>
         </div>
@@ -576,37 +567,13 @@
                     <h2 class="title is-3">SafeLLaVA</h2>
                     <div class="content has-text-justified">
                         <p>
-                            We propose a simple yet safety-effective VLM architecture. It incorporates a <em>learnable
-                                image <b>S</b>afety <b>M</b>eta <b>T</b>oken</em> (<code>[SMT]</code>) and a safety head that not only
-                            classifies visually harmful content, acting as a visual safety guard model, but also
-                            provides the LLM with intrinsic safety cues for generating safer responses.
-                            To this end, The <code>[SMT]</code> is appended at the end of visual tokens, which allows
-                            for
-                            attention to visual tokens within both the vision encoder and decoder of the LLM.
+                        We propose a novel modular framework centered on a Visual Guard Module (VGM), a lightweight classifier designed to detect visually harmful content. 
+                        The VGM operates on visual tokens processed and contextualized by the vision encoder and LLM. It pools these final-layer visual tokens into a single global vector, which then serves as the input for classifying the image's harmfulness. 
+                        This approach yields significant advantages: it enables a dual functionality where the model can simultaneously generate safe responses and perform harmfulness classification;
+                        it enhances interpretability by enabling the model to explicitly justify its safety refusals; and its modularity allows for seamless integration into diverse VLMs, as demonstrated by our Safe-VLM series.
                         </p>
                         <img src="static/images/safellava_mascot.png" class="center"
                             style="width: 100%; margin: 2rem auto;">
-                        <br>
-                        <p>
-                            We visualize average attention weights from generated tokens to <code>[SMT]</code> and
-                            visual tokens
-                            across layers of the LLM, revealing two key phenomena: i) <code>[SMT]</code> exhibits a
-                            bimodal attention
-                            pattern, strongest in early and late layers, consistent with similar phenomena observed for
-                            special tokens in prior language model research. This suggests <code>[SMT]</code> functions
-                            across
-                            decoding stages, from early context integration and safety constraint embedding to
-                            late-stage constraint enforcement and final safety checks. ii) Generated tokens attend more
-                            to <code>[SMT]</code> than to visual tokens across layers. This highlights
-                            <code>[SMT]</code>'s salience, suggesting
-                            its critical role in guiding the LLM's response from a safety perspective compared to raw
-                            visual input.
-                            Collectively, these attention patterns underscore the pivotal role of the safety meta token
-                            in influencing the LLM's decoding process for safety alignment.
-                        </p>
-                        <img src="static/images/attention_analysis.png" class="center"
-                            style="width: 100%; margin: 2rem auto;">
-                        <br>
                         <p></p>
                     </div>
                 </div>
@@ -772,22 +739,21 @@
                                     <p>
                                         <b>2. <span style="color: rgba(100, 100, 255, 0.8);">Open-weight VLMs</span>
                                             show highest vulnerability:</b> These models exhibit the highest ASRs
-                                        (52-78%) with refusal rates of 0.5-2.5% on safe inputs, demonstrating
+                                        (52-79%) with refusal rates of 0.3-1.6% on safe inputs, demonstrating
                                         significant safety challenges.
                                     </p>
                                     <p>
                                         <b>3. <span style="color: rgba(34, 139, 34, 0.8);">Closed-weight VLMs</span>
                                             achieve moderate safety:</b> While showing improved safety (e.g.,
                                         Claude-3.5-Sonnet), these models still face challenges with ASRs up to 67% under
-                                        certain judges, though maintaining low refusal rates (0-1.7%).
+                                        certain judges, though maintaining low refusal rates (0-1.2%).
                                     </p>
                                     <p>
                                         <b>4. <span style="color: rgba(209, 0, 55, 0.6);">Safety-tuned VLMs</span>
                                             achieve the lowest ASRs overall,
-                                            albeit with modestly higher refusal rates.:</b> SafeLLaVA models achieve the
-                                        lowest ASRs (below 7% under Claude, below 15% under other judges), with
-                                        SafeLLaVA-13B reaching just 1.09% ASR, albeit with a slightly higher refusal
-                                        rate of 6.09%.
+                                            albeit with modestly higher refusal rates.:</b> Safety-tuned methods VLGuard and SPA-VL exhibit lower mASR compared to the open-weight model, but show varying ASR against the closed-weight model and do not consistently achieve the lowest rate.
+                                            However, our Safe-VLM models, trained on HoliSafe, showcase lower ASRs below 10% under Claude and below 16% under GPT/Gemini; in particular, Safe-LLaVA-7B achieves lower mASR with similar RR than counterparts, VLGuard-7B and SPA-VL-7B, by large margins. Furthermore, Safe-Qwen2.5-VL-32B achieves the lowest ASRs under all judges.
+                                            However, all safety-tuned models show slightly increased refusal rates compared to open and closed weight models.
                                     </p>
                                     <p>
                                         <b>5. Judge consistency in model ranking:</b> While absolute metrics vary by
@@ -796,12 +762,12 @@
                                     </p>
                                     <p>
                                         <b>6. Strong correlation with string matching:</b> Automatic string matching
-                                        shows high concordance with AI judges (ρ=0.98 with GPT-4o/Gemini), suggesting
+                                        shows high correlation with AI judges (ρ=0.99 with GPT-4o/Gemini), suggesting
                                         its viability as a cost-effective safety evaluation method.
                                     </p>
                                 </div>
-                                <img src="static/images/correlation.png" class="center"
-                                    style="width: 45%; margin: 2rem auto;">
+                                <img src="static/images/radar_correlation.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;">
                             </div>
                         </div>
                         <!-- Other results with static/other_results.png -->
@@ -812,18 +778,25 @@
                                         <span style="vertical-align: middle;"> Other Results</span>
                                     </h2>
                                     <p>
-                                        We show the win rate of our SafeLLaVA-7B compared to safety-tuned VLMs (e.g., VLGuard and SPA-AL) and proprietary VLMs (e.g., GPT-4o, Claude-3.5-Sonnet, and Gemini-2.0-Flash).
-                                        We use GPT-4o, Claude-3.5-Sonnet, and Gemini-2.0-Flash as judges.
-                                        <img src="static/images/win_rate.png" class="center" style="width: 85%; margin: 2rem auto;">
-                                    </p>
-                                    <p>
-                                        Our SafeLLaVA outperforms other safety-tuned VLMs (e.g., VLGuard and SPA-VL) on different VLM safety benchmarks while achieving comparable helpfulness on general VLM benchmarks (MMMU, MMStar, etc).
-                                        Furthermore, SafeLLaVA-7B surpasses other vision guard models, such as LLaMA-Guard4-12B, LLaMA-Guard3-11B-Vision, LLaVAGuard-7B and ShieldGemma2-4B-IT.
+                                        Our SafeLLaVA outperforms other safety-tuned VLMs such as VLGuard and SPA-VL based on the same LLaVA-v1.5 backbone on different VLM safety benchmarks.
                                     </p>
                                 </div>
                                 <img src="static/images/other_results.png" class="center"
                                     style="width: 80%; margin: 2rem auto;">
-                                <!-- <img src="static/images/category-wise-gpt-4o.png" class="center"
+                                <div class="content has-text-justified" style="margin-top: 3rem;">
+                                    <p>
+                                        We evaluate our framework's effectiveness by comparing our Safe-VLM series against their baselines on the safety-utility trade-off. 
+                                        For this analysis, the safety rate is computed as 1 minus the mean attack success rate. The results demonstrate a dramatic improvement in safety across all models and scales; 
+                                        our Safe-VLM series consistently achieves a safety rate exceeding 91%, a substantial leap from the baselines' 21-48% range. 
+                                        Critically, this significant safety enhancement is achieved with a minimal impact on utility, as Helpfulness scores decrease by a negligible 0-1.2 percentage points. 
+                                        This outcome validates that our modular approach effectively enhances VLM safety without sacrificing core instruction-following capabilities, thus achieving a highly favorable safety-utility balance.
+                                        Furthermore, compared to Guard models such as LLaMA-Guard4-12B, LLaMA-Guard4-12B, LLaMA-Guard3-11B-Vision, LLaVAGuard-7B and ShieldGemma2-4B-IT our Safe-VLM with VGM excels in guard-style classification accuracy as well as critically maintains its robust instruction-following VLM capabilities.
+                                        This unique duality allows it to both generate safe responses and provide explicit input safety classifications, offering vital interpretability and effectively bridging the gap between pure safety classifiers and safe vision-language instruction models.
+                                    </p>
+                                </div>
+                                <img src="static/images/other_results2.png" class="center"
+                                    style="width: 80%; margin: 2rem auto;">
+                                    <!-- <img src="static/images/category-wise-gpt-4o.png" class="center"
                                     style="width: 80%; margin: 2rem auto;">
                                     <img src="static/images/category-wise-claude.png" class="center"
                                     style="width: 80%; margin: 2rem auto;"> -->
@@ -835,21 +808,9 @@
                                     <h2 class="title is-3 has-text-centered">
                                         <span style="vertical-align: middle;"> Further Analysis</span>
                                     </h2>
-                                    <img src="static/images/category-wise-gpt-4o.png" class="center"
-                                    style="width: 80%; margin: 2rem auto;">
-                                    <img src="static/images/category-wise-claude.png" class="center"
-                                    style="width: 80%; margin: 2rem auto;">
-                                    <img src="static/images/category-wise-gemini.png" class="center"
-                                    style="width: 80%; margin: 2rem auto;">
-                                    <img src="static/images/category-wise-sm.png" class="center"
-                                    style="width: 80%; margin: 2rem auto;">
-                                    <img src="static/images/type-gpt.png" class="center"
+                                    <img src="static/images/category-claude.png" class="center"
                                     style="width: 80%; margin: 2rem auto;">
                                     <img src="static/images/type-claude.png" class="center"
-                                    style="width: 80%; margin: 2rem auto;">
-                                    <img src="static/images/type-gemini.png" class="center"
-                                    style="width: 80%; margin: 2rem auto;">
-                                    <img src="static/images/type-sm.png" class="center"
                                     style="width: 80%; margin: 2rem auto;">
                                 </div>
                             </div>
@@ -867,27 +828,27 @@
         <div id="results-carousel" class="carousel results-carousel">
           <div class="box m-5">
             <div class="content has-text-centered">
-              <img src="static/images/qual_comparison_1.png" alt="grade-lv" width="100%"/>
+              <img src="static/images/qual_comparison_iclr_1.png" alt="grade-lv" width="100%"/>
             </div>
           </div>
           <div class="box m-5">
             <div class="content has-text-centered">
-              <img src="static/images/qual_comparison_2.png" alt="grade-lv" width="100%"/>
+              <img src="static/images/qual_comparison_iclr_2.png" alt="grade-lv" width="100%"/>
             </div>
           </div>
           <div class="box m-5">
             <div class="content has-text-centered">
-              <img src="static/images/qual_comparison_3.png" alt="grade-lv" width="100%"/>
+              <img src="static/images/qual_comparison_iclr_3.png" alt="grade-lv" width="100%"/>
             </div>
           </div>
           <div class="box m-5">
             <div class="content has-text-centered">
-              <img src="static/images/qual_comparison_4.png" alt="grade-lv" width="100%"/>
+              <img src="static/images/qual_comparison_iclr_4.png" alt="grade-lv" width="100%"/>
             </div>
           </div>
           <div class="box m-5">
             <div class="content has-text-centered">
-              <img src="static/images/qual_comparison_5.png" alt="grade-lv" width="100%"/>
+              <img src="static/images/qual_comparison_iclr_5.png" alt="grade-lv" width="100%"/>
             </div>
           </div>
         </div>
@@ -907,7 +868,7 @@
             <h2 class="title is-3 has-text-centered">BibTeX</h2>
             <pre><code>
       @article{lee2025holisafe,
-        title={HoliSafe: Holistic Safety Benchmarking and Modeling with Safety Meta Token for Vision-Language Model},
+        title={HoliSafe: Holistic Safety Benchmarking and Modeling for Vision-Language Model},
         author={Lee, Youngwan and Kim, Kangsan and Park, Kwanyong and Jung, Ilcahe and Jang, Soojin and Lee, Seanie and Lee, Yong-Ju and Hwang, Sung Ju},
         journal={arXiv preprint arXiv:2506.04704},
         year={2025},
