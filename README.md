@@ -43,7 +43,7 @@ Despite emerging efforts to enhance the safety of Vision-Language Models (VLMs),
 ## 📖BibTeX
 ```bibtex
       @article{lee2025holisafe,
-        title={HoliSafe: Holistic Safety Benchmarking and Modeling with for Vision-Language Model},
+        title={HoliSafe: Holistic Safety Benchmarking and Modeling for Vision-Language Model},
         author={Lee, Youngwan and Kim, Kangsan and Park, Kwanyong and Jung, Ilcahe and Jang, Soojin and Lee, Seanie and Lee, Yong-Ju and Hwang, Sung Ju},
         journal={arXiv preprint arXiv:2506.04704},
         year={2025},
