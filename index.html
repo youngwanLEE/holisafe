@@ -171,7 +171,7 @@
             if (modelName.includes('VLGuard') ||
                 modelName.includes('SPA-VL') ||
                 modelName.includes('SafeLLaVA') ||
-                modelName.includes('SafeGemma-3') ||
+                modelName.includes('SafeGem') ||
                 modelName.includes('SafeQwen2.5-VL')) {
                 return 'model-group-safety-tuned';
             }
@@ -228,7 +228,7 @@
 
                         if (colIndex === 0) {
                             // Make certain safety-tuned model names bold
-                            const boldModels = ['SafeLLaVA', 'SafeQwen2.5-VL', 'SafeGemma-3'];
+                            const boldModels = ['SafeLLaVA', 'SafeQwen2.5-VL', 'SafeGem'];
                             return boldModels.some(name => cell.includes(name)) ?
                                 `<td><strong>${cell}</strong></td>` :
                                 `<td>${cell}</td>`;
