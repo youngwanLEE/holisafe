@@ -55,7 +55,7 @@ First, you must generate model predictions on the HoliSafe-Bench dataset.
     ```
     > **Note**: You can find example prediction files in the `predictions/` directory.
 
-### 2. Run Evaluation
+### 2. Run Evaluation by AI-as-Judge
 
 You can run the evaluation using Python scripts directly or use the provided shell scripts for convenience.
 
@@ -122,7 +122,7 @@ bash eval/eval_by_gemini_batch_v2.sh predictions/your_model.json path/to/images 
 > *   `*_metrics_summary.txt`: Human-readable summary of metrics.
 > *   `*_ordered_metrics.txt`: Comma-separated metrics for easy parsing.
 
-#### Option C: String Matching
+### 3. Run Evaluation by String Matching
 This method checks for specific refusal phrases in the prediction. It is faster but may be less robust than AI evaluation.
 
 **Usage:**
